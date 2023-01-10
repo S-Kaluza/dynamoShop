@@ -22,6 +22,9 @@ class ProductController extends AbstractController
         if ($id) {
             return new JsonResponse(getResponseArrayById($doctrine, $id));
         }
+        if ($howMuch && $type) {
+            return new JsonResponse(getResponseArrayByHowMuchAndType($doctrine, $howMuch, $type));
+        }
         if ($howMuch && $page && $type) {
             return new JsonResponse(getResponseArrayByPageAndType($doctrine, $howMuch, $page, $type));
         }
@@ -153,6 +156,34 @@ function getResponseArrayByPageAndType(ManagerRegistry $doctrine, int $howMuch, 
     };
     $arrayCollection = array();
     for ($i = $howMuch * $page; $i < $howMuch * ($page + 1); $i++) {
+        $item = $product[$i];
+        if (!$item) {
+            return $arrayCollection;
+        };
+        $arrayCollection[] = array(
+            'name' => $item->getName(),
+            'description' => $item->getOpis(),
+            'price' => $item->getCena(),
+            'category' => $item->getIdKategorii()->getId(),
+            'created' => $item->getUtworzone()->format('Y-m-d H:i:s'),
+            'modified' => $item->getZmodyfikowane()->format('Y-m-d H:i:s'),
+        );
+    }
+    return $arrayCollection;
+}
+
+function getResponseArrayByHowMuchAndType(ManagerRegistry $doctrine, int $howMuch, Kategoria $type): array
+{
+    $category = $doctrine->getRepository(Kategoria::class)->find($type->getId());
+    if (!$category) {
+        return array();
+    };
+    $product = $doctrine->getRepository(Produkty::class)->findBy(array('id_kategorii' => $category));
+    if (!$product) {
+        return array();
+    };
+    $arrayCollection = array();
+    for ($i = 0; $i < $howMuch; $i++) {
         $item = $product[$i];
         if (!$item) {
             return $arrayCollection;
